@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Wistory Gelir Hesaplayıcı</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { background: #16211f; }
+  body { color: #e8e4d8; font-family: 'Sora', system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+  .app { min-height: 100vh; padding: 24px 18px 50px; }
+  header.top { max-width: 1060px; margin: 0 auto 18px; }
+  header.top h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: #f2edda; }
+  header.top h1 em { font-style: normal; color: #c9a24b; }
+  header.top p { margin-top: 6px; font-size: 13px; color: #9aa69c; max-width: 62ch; line-height: 1.55; }
+  .presets { max-width: 1060px; margin: 0 auto 18px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .presets button { font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    background: #1d2a27; color: #b8c2b7; border: 1px solid #2c3b36; border-radius: 7px; padding: 8px 14px; }
+  .presets button:hover { border-color: #c9a24b; color: #f2edda; }
+  .layout { max-width: 1060px; margin: 0 auto; display: grid; grid-template-columns: 1fr 370px; gap: 20px; align-items: start; }
+  @media (max-width: 880px) { .layout { grid-template-columns: 1fr; } .ledger { position: static !important; } }
+  .group { background: #1d2a27; border: 1px solid #2c3b36; border-radius: 10px; padding: 16px 16px 6px; margin-bottom: 14px; }
+  .group h2 { font-size: 12.5px; font-weight: 700; color: #c9a24b; padding-bottom: 11px;
+    border-bottom: 1px solid #2c3b36; margin-bottom: 13px; letter-spacing: 0.3px; }
+  .field { margin-bottom: 15px; }
+  .field-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; gap: 10px; }
+  .field-label { font-size: 13px; color: #b8c2b7; }
+  .field-value { font-size: 14px; font-weight: 700; color: #f2edda; white-space: nowrap; }
+  .field-value small { font-weight: 600; color: #c9a24b; margin-left: 6px; }
+  .hint { font-size: 11.5px; color: #74827a; margin-top: 5px; line-height: 1.55; }
+  .hint b { color: #8f9d92; font-weight: 600; }
+  input[type=range] { width: 100%; appearance: none; -webkit-appearance: none; height: 4px; border-radius: 2px;
+    background: #33443e; outline: none; cursor: pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+    background: #c9a24b; border: 2px solid #16211f; }
+  input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #c9a24b; border: 2px solid #16211f; }
+  input[type=range]:focus-visible { box-shadow: 0 0 0 2px #c9a24b; }
+  .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 13px; }
+  .toggle { width: 42px; height: 24px; border-radius: 12px; border: none; cursor: pointer; background: #33443e;
+    position: relative; transition: background .15s; flex: none; }
+  .toggle.on { background: #c9a24b; }
+  .toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
+    border-radius: 50%; background: #16211f; transition: left .15s; }
+  .toggle.on::after { left: 21px; }
+  .toggle-label { font-size: 13px; color: #b8c2b7; }
+  .ledger { position: sticky; top: 16px; background: #101917; border: 1px solid #3a4c44;
+    border-top: 3px solid #c9a24b; border-radius: 10px; padding: 18px; }
+  .big-label { font-size: 12px; color: #9aa69c; margin-bottom: 4px; }
+  .big-number { font-size: 32px; font-weight: 800; letter-spacing: -1px; }
+  .big-number.pos { color: #8fce9a; }
+  .big-number.neg { color: #d98a72; }
+  .bar { display: flex; height: 14px; border-radius: 4px; overflow: hidden; margin: 14px 0 8px; background: #1d2a27; }
+  .bar div { height: 100%; }
+  .bar .iap { background: #c9a24b; } .bar .bp { background: #a8783f; } .bar .ad { background: #7aa88f; }
+  .legend { display: flex; gap: 13px; font-size: 11px; color: #9aa69c; margin-bottom: 14px; flex-wrap: wrap; }
+  .legend span::before { content: ''; display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; }
+  .legend .l-iap::before { background: #c9a24b; }
+  .legend .l-bp::before { background: #a8783f; }
+  .legend .l-ad::before { background: #7aa88f; }
+  .rows { border-top: 1px solid #2c3b36; }
+  .row { display: flex; justify-content: space-between; padding: 7px 0; font-size: 13px; border-bottom: 1px solid #22302c; gap: 10px; }
+  .row .k { color: #9aa69c; }
+  .row .v { font-weight: 600; color: #e8e4d8; white-space: nowrap; }
+  .row .v small { color: #c9a24b; font-weight: 600; margin-left: 6px; }
+  .row.total .k, .row.total .v { font-weight: 800; color: #f2edda; }
+  .funnel { margin-bottom: 14px; }
+  .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 14px; }
+  .kpi { background: #1d2a27; border: 1px solid #2c3b36; border-radius: 8px; padding: 9px 11px; }
+  .kpi .k { font-size: 11px; color: #9aa69c; }
+  .kpi .v { font-size: 16px; font-weight: 700; margin-top: 2px; }
+  .kpi .v.good { color: #8fce9a; } .kpi .v.bad { color: #d98a72; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useMemo } = React;
+
+const fmt = (n, d = 0) => n.toLocaleString("tr-TR", { maximumFractionDigits: d, minimumFractionDigits: d });
+const usd = (n, d = 0) => "$" + fmt(n, d);
+
+function Slider({ label, value, onChange, min, max, step = 1, display, hint }) {
+  return (
+    <div className="field">
+      <div className="field-head">
+        <span className="field-label">{label}</span>
+        <span className="field-value">{display}</span>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))} />
+      {hint && <div className="hint">{hint}</div>}
+    </div>
+  );
+}
+
+const Bench = ({ mobil, pc }) => (
+  <span><b>Mobil ort:</b> {mobil} · <b>PC ort:</b> {pc}</span>
+);
+
+const Group = ({ title, children }) => (
+  <section className="group"><h2>{title}</h2>{children}</section>
+);
+
+const PRESETS = {
+  kotumser: { mauPct: 20, dauPct: 15, ccuPct: 6, d1: 25, d7: 9, d30: 3, payerRate: 1.2, avgTxn: 5, watcherPct: 20, avgWatched: 2, ecpm: 5, bpBuyPct: 1.5 },
+  gercekci: { mauPct: 30, dauPct: 22, ccuPct: 8, d1: 38, d7: 15, d30: 6, payerRate: 2.5, avgTxn: 6.5, watcherPct: 30, avgWatched: 3, ecpm: 9, bpBuyPct: 4 },
+  iyimser:  { mauPct: 40, dauPct: 30, ccuPct: 11, d1: 45, d7: 20, d30: 9, payerRate: 4, avgTxn: 9, watcherPct: 45, avgWatched: 4, ecpm: 14, bpBuyPct: 8 },
+};
+
+function App() {
+  const [downloads, setDownloads] = useState(100000);
+  const [mauPct, setMauPct] = useState(30);
+  const [dauPct, setDauPct] = useState(22);
+  const [ccuPct, setCcuPct] = useState(8);
+  const [d1, setD1] = useState(38);
+  const [d7, setD7] = useState(15);
+  const [d30, setD30] = useState(6);
+
+  const [payerRate, setPayerRate] = useState(2.5);
+  const [avgTxn, setAvgTxn] = useState(6.5);
+  const [storeCut, setStoreCut] = useState(15);
+  const [webShare, setWebShare] = useState(10);
+  const [webCut, setWebCut] = useState(4);
+
+  const [bpOn, setBpOn] = useState(false);
+  const [bpPrice, setBpPrice] = useState(5);
+  const [bpBuyPct, setBpBuyPct] = useState(4);
+  const [bpSeasonDays, setBpSeasonDays] = useState(30);
+
+  const [adsOn, setAdsOn] = useState(true);
+  const [adCap, setAdCap] = useState(5);
+  const [watcherPct, setWatcherPct] = useState(30);
+  const [avgWatched, setAvgWatched] = useState(3);
+  const [ecpm, setEcpm] = useState(9);
+
+  const [serverPerCcu, setServerPerCcu] = useState(0.6);
+  const [fixedMonthly, setFixedMonthly] = useState(400);
+  const [uaDaily, setUaDaily] = useState(50);
+  const [cpi, setCpi] = useState(0.9);
+  const [lifetimeDays, setLifetimeDays] = useState(45);
+
+  const applyPreset = (p) => {
+    setMauPct(p.mauPct); setDauPct(p.dauPct); setCcuPct(p.ccuPct);
+    setD1(p.d1); setD7(p.d7); setD30(p.d30);
+    setPayerRate(p.payerRate); setAvgTxn(p.avgTxn);
+    setWatcherPct(p.watcherPct); setAvgWatched(Math.min(p.avgWatched, adCap)); setEcpm(p.ecpm);
+    setBpBuyPct(p.bpBuyPct);
+  };
+
+  const r = useMemo(() => {
+    const mau = downloads * (mauPct / 100);
+    const dau = mau * (dauPct / 100);
+    const ccu = dau * (ccuPct / 100);
+
+    const payers = dau * (payerRate / 100);
+    const iapGrossDaily = payers * avgTxn;
+    const bpGrossDaily = bpOn ? (mau * (bpBuyPct / 100) * bpPrice) / bpSeasonDays : 0;
+
+    const purchaseGross = iapGrossDaily + bpGrossDaily;
+    const webGross = purchaseGross * (webShare / 100);
+    const appGross = purchaseGross - webGross;
+    const purchaseNet = appGross * (1 - storeCut / 100) + webGross * (1 - webCut / 100);
+
+    const watchers = dau * (watcherPct / 100);
+    const impDaily = adsOn ? watchers * Math.min(avgWatched, adCap) : 0;
+    const adDaily = (impDaily * ecpm) / 1000;
+
+    const grossDaily = purchaseGross + adDaily;
+    const netDaily = purchaseNet + adDaily;
+    const arpdauGross = dau > 0 ? grossDaily / dau : 0;
+    const arpdauNet = dau > 0 ? netDaily / dau : 0;
+    const arppu = payers > 0 ? iapGrossDaily / payers : 0;
+
+    const serverMonthly = ccu * serverPerCcu;
+    const uaMonthly = uaDaily * 30;
+    const costMonthly = serverMonthly + fixedMonthly + uaMonthly;
+
+    const grossMonthly = grossDaily * 30;
+    const netMonthly = netDaily * 30;
+    const profitMonthly = netMonthly - costMonthly;
+
+    const ltv = arpdauNet * lifetimeDays;
+    const roas = cpi > 0 ? ltv / cpi : 0;
+    const newInstallsMonthly = cpi > 0 ? uaMonthly / cpi : 0;
+
+    const netPerDauMonth = arpdauNet * 30;
+    const serverPerDauMonth = (ccuPct / 100) * serverPerCcu;
+    const denom = netPerDauMonth - serverPerDauMonth;
+    const breakEvenDau = denom > 0 ? (fixedMonthly + uaMonthly) / denom : null;
+
+    return { mau, dau, ccu, payers, watchers, impDaily, iapGrossDaily, bpGrossDaily,
+      purchaseGross, purchaseNet, webGross, adDaily, grossDaily, netDaily,
+      arpdauGross, arpdauNet, arppu, serverMonthly, uaMonthly, costMonthly,
+      grossMonthly, netMonthly, profitMonthly, ltv, roas, newInstallsMonthly, breakEvenDau };
+  }, [downloads, mauPct, dauPct, ccuPct, payerRate, avgTxn, storeCut, webShare, webCut,
+      bpOn, bpPrice, bpBuyPct, bpSeasonDays, adsOn, adCap, watcherPct, avgWatched, ecpm,
+      serverPerCcu, fixedMonthly, uaDaily, cpi, lifetimeDays]);
+
+  const barMax = Math.max(r.grossMonthly, r.costMonthly, 1);
+  const seg = (v) => Math.max((v / barMax) * 100, 0);
+
+  return (
+    <div className="app">
+      <header className="top">
+        <h1><em>Wistory</em> Gelir Hesaplayıcı</h1>
+        <p>Oranlar zincir halinde çalışır: MAU indirmelerden, DAU MAU'dan, CCU DAU'dan.
+        Her değer hem sayı hem yüzde görünür; ipuçlarında mobil ve PC ortalamaları yazar.</p>
+      </header>
+
+      <div className="presets">
+        <button onClick={() => applyPreset(PRESETS.kotumser)}>Kötümser senaryo</button>
+        <button onClick={() => applyPreset(PRESETS.gercekci)}>Gerçekçi senaryo</button>
+        <button onClick={() => applyPreset(PRESETS.iyimser)}>İyimser senaryo</button>
+      </div>
+
+      <div className="layout">
+        <div>
+          <Group title="Kullanıcı Hunisi">
+            <Slider label="Toplam indirme" value={downloads} onChange={setDownloads}
+              min={1000} max={5000000} step={1000} display={fmt(downloads)} />
+            <Slider label="Aylık aktif oran (MAU / indirme)" value={mauPct} onChange={setMauPct}
+              min={1} max={80} step={0.5}
+              display={<React.Fragment>{fmt(r.mau)}<small>%{fmt(mauPct, 1)}</small></React.Fragment>}
+              hint={<Bench mobil="ilk yıl %20–35" pc="%30–45" />} />
+            <Slider label="Günlük aktif oran (DAU / MAU)" value={dauPct} onChange={setDauPct}
+              min={1} max={60} step={0.5}
+              display={<React.Fragment>{fmt(r.dau)}<small>%{fmt(dauPct, 1)}</small></React.Fragment>}
+              hint={<Bench mobil="%15–25 (strateji %18–25)" pc="%25–40" />} />
+            <Slider label="Eşzamanlılık oranı (CCU / DAU)" value={ccuPct} onChange={setCcuPct}
+              min={1} max={30} step={0.5}
+              display={<React.Fragment>{fmt(r.ccu)}<small>%{fmt(ccuPct, 1)}</small></React.Fragment>}
+              hint={<Bench mobil="%5–12" pc="%8–15" />} />
+            <Slider label="D1 tutundurma" value={d1} onChange={setD1} min={0} max={80}
+              display={<React.Fragment>{fmt(downloads * d1 / 100)}<small>%{d1}</small></React.Fragment>}
+              hint={<Bench mobil="%25–35 (iyi strateji %35–40)" pc="%35–50" />} />
+            <Slider label="D7 tutundurma" value={d7} onChange={setD7} min={0} max={50}
+              display={<React.Fragment>{fmt(downloads * d7 / 100)}<small>%{d7}</small></React.Fragment>}
+              hint={<Bench mobil="%10–15 (iyi %15–18)" pc="%15–25" />} />
+            <Slider label="D30 tutundurma" value={d30} onChange={setD30} min={0} max={30}
+              display={<React.Fragment>{fmt(downloads * d30 / 100)}<small>%{d30}</small></React.Fragment>}
+              hint={<Bench mobil="%3–6 (iyi %6–8)" pc="%8–15" />} />
+          </Group>
+
+          <Group title="Gelir — Uygulama İçi Satın Alma">
+            <Slider label="Günlük ödeyen oranı (ödeyen / DAU)" value={payerRate} onChange={setPayerRate}
+              min={0} max={10} step={0.1}
+              display={<React.Fragment>{fmt(r.payers)} oyuncu<small>%{fmt(payerRate, 1)}</small></React.Fragment>}
+              hint={<Bench mobil="%1–3 (iyi mağaza %3–5)" pc="%2–5" />} />
+            <Slider label="Ortalama işlem tutarı" value={avgTxn} onChange={setAvgTxn}
+              min={0.5} max={50} step={0.5} display={usd(avgTxn, 1)}
+              hint={<Bench mobil="$5–10" pc="$10–20" />} />
+            <Slider label="App mağaza kesintisi" value={storeCut} onChange={setStoreCut}
+              min={0} max={30} display={"%" + storeCut}
+              hint={<Bench mobil="Google/Apple: $1M altı %15, üstü %30" pc="Steam %30, Epic %12" />} />
+            <Slider label="Web mağazası payı (satın almaların %'si)" value={webShare} onChange={setWebShare}
+              min={0} max={100}
+              display={<React.Fragment>{usd(r.webGross * 30)}/ay<small>%{webShare}</small></React.Fragment>}
+              hint="Creator kupon sistemin bu payı büyütür; web satışında mağaza kesintisi yok, sadece ödeme sağlayıcı keser" />
+            <Slider label="Web ödeme sağlayıcı kesintisi" value={webCut} onChange={setWebCut}
+              min={0} max={15} step={0.5} display={"%" + fmt(webCut, 1)}
+              hint="Stripe/iyzico/Xsolla tipik %3–5 arası" />
+          </Group>
+
+          <Group title="Gelir — Battle Pass">
+            <div className="toggle-row">
+              <button className={"toggle" + (bpOn ? " on" : "")} onClick={() => setBpOn(!bpOn)}
+                aria-label="Battle pass gelirini aç/kapat"></button>
+              <span className="toggle-label">
+                {bpOn ? "Battle pass hesaba dahil" : "Battle pass kapalı (şu an oyunda da kapalı)"}
+              </span>
+            </div>
+            {bpOn && (
+              <React.Fragment>
+                <Slider label="Sezon fiyatı" value={bpPrice} onChange={setBpPrice}
+                  min={1} max={30} step={0.5} display={usd(bpPrice, 1)}
+                  hint={<Bench mobil="$5–10" pc="$10–15" />} />
+                <Slider label="Alan oyuncu oranı (sezon başına, MAU'dan)" value={bpBuyPct} onChange={setBpBuyPct}
+                  min={0} max={25} step={0.5}
+                  display={<React.Fragment>{fmt(r.mau * bpBuyPct / 100)} oyuncu<small>%{fmt(bpBuyPct, 1)}</small></React.Fragment>}
+                  hint={<Bench mobil="%3–8 (güçlü pass %8–15)" pc="%5–12" />} />
+                <Slider label="Sezon süresi" value={bpSeasonDays} onChange={setBpSeasonDays}
+                  min={14} max={90} display={fmt(bpSeasonDays) + " gün"} />
+              </React.Fragment>
+            )}
+          </Group>
+
+          <Group title="Gelir — Ödüllü Reklam">
+            <div className="toggle-row">
+              <button className={"toggle" + (adsOn ? " on" : "")} onClick={() => setAdsOn(!adsOn)}
+                aria-label="Reklam gelirini aç/kapat"></button>
+              <span className="toggle-label">
+                {adsOn ? "Reklam geliri hesaba dahil" : "Reklam geliri kapalı"}
+              </span>
+            </div>
+            {adsOn && (
+              <React.Fragment>
+                <Slider label="Günlük izlenebilir reklam limiti (oyuncu başı)" value={adCap}
+                  onChange={(v) => { setAdCap(v); if (avgWatched > v) setAvgWatched(v); }}
+                  min={1} max={20} display={fmt(adCap) + " reklam"}
+                  hint="Şu an oyunda 5. Limit artınca gelir tavanı yükselir ama ödül ekonomisini şişirmemeye dikkat" />
+                <Slider label="Reklam izleyen oyuncu oranı (izleyen / DAU)" value={watcherPct} onChange={setWatcherPct}
+                  min={0} max={100}
+                  display={<React.Fragment>{fmt(r.watchers)} oyuncu<small>%{watcherPct}</small></React.Fragment>}
+                  hint={<Bench mobil="%20–40 (iyi yerleşimle %40–60)" pc="%10–25" />} />
+                <Slider label="İzleyen başına ort. izlenen reklam" value={avgWatched} onChange={setAvgWatched}
+                  min={0.5} max={adCap} step={0.5}
+                  display={<React.Fragment>{fmt(avgWatched, 1)} / {adCap}<small>%{fmt(avgWatched / adCap * 100, 0)} doluluk</small></React.Fragment>}
+                  hint={"Günlük toplam gösterim: " + fmt(r.impDaily) + " — tipik doluluk %40–70"} />
+                <Slider label="eCPM (1000 gösterim geliri)" value={ecpm} onChange={setEcpm}
+                  min={1} max={40} step={0.5} display={usd(ecpm, 1)}
+                  hint={<Bench mobil="ödüllü video TR $3–8, ABD/AB $12–25" pc="web/PC $2–6" />} />
+              </React.Fragment>
+            )}
+          </Group>
+
+          <Group title="Giderler">
+            <Slider label="Sunucu maliyeti (CCU başına / ay)" value={serverPerCcu} onChange={setServerPerCcu}
+              min={0} max={5} step={0.05}
+              display={usd(serverPerCcu, 2) + " → " + usd(r.serverMonthly) + "/ay"}
+              hint="PlayFab + Azure sunucu kombinasyonunu CCU başına aylık maliyet olarak modelle" />
+            <Slider label="Sabit aylık gider" value={fixedMonthly} onChange={setFixedMonthly}
+              min={0} max={20000} step={50} display={usd(fixedMonthly)}
+              hint="Araç abonelikleri, freelancer, mağaza ücretleri vs." />
+            <Slider label="Günlük reklam (UA) bütçesi" value={uaDaily} onChange={setUaDaily}
+              min={0} max={5000} step={10}
+              display={usd(uaDaily) + " → " + usd(r.uaMonthly) + "/ay"} />
+            <Slider label="CPI (indirme başı maliyet)" value={cpi} onChange={setCpi}
+              min={0.05} max={10} step={0.05} display={usd(cpi, 2)}
+              hint={<Bench mobil="TR strateji $0.3–1, ABD $2–5" pc="Steam'de wishlist maliyeti ~$0.2–1" />} />
+            <Slider label="Ortalama oyuncu ömrü" value={lifetimeDays} onChange={setLifetimeDays}
+              min={1} max={365} display={fmt(lifetimeDays) + " gün"}
+              hint="LTV hesabında kullanılır; tutundurma eğrisinin altındaki alan kabaca bunu verir" />
+          </Group>
+        </div>
+
+        <aside className="ledger">
+          <div className="big-label">Aylık net kâr</div>
+          <div className={"big-number " + (r.profitMonthly >= 0 ? "pos" : "neg")}>{usd(r.profitMonthly)}</div>
+
+          <div className="bar" aria-hidden="true">
+            <div className="iap" style={{ width: seg(r.iapGrossDaily * 30) + "%" }}></div>
+            <div className="bp" style={{ width: seg(r.bpGrossDaily * 30) + "%" }}></div>
+            <div className="ad" style={{ width: seg(r.adDaily * 30) + "%" }}></div>
+          </div>
+          <div className="legend">
+            <span className="l-iap">IAP</span>
+            {bpOn && <span className="l-bp">Battle pass</span>}
+            <span className="l-ad">Reklam</span>
+          </div>
+
+          <div className="rows funnel">
+            <div className="row"><span className="k">İndirme</span><span className="v">{fmt(downloads)}</span></div>
+            <div className="row"><span className="k">MAU</span><span className="v">{fmt(r.mau)}<small>%{fmt(mauPct, 1)}</small></span></div>
+            <div className="row"><span className="k">DAU</span><span className="v">{fmt(r.dau)}<small>%{fmt(dauPct, 1)}</small></span></div>
+            <div className="row"><span className="k">CCU</span><span className="v">{fmt(r.ccu)}<small>%{fmt(ccuPct, 1)}</small></span></div>
+            <div className="row"><span className="k">Ödeyen / gün</span><span className="v">{fmt(r.payers)}<small>%{fmt(payerRate, 1)}</small></span></div>
+            <div className="row"><span className="k">Reklam izleyen / gün</span><span className="v">{fmt(r.watchers)}<small>%{watcherPct}</small></span></div>
+            <div className="row"><span className="k">Reklam gösterimi / gün</span><span className="v">{fmt(r.impDaily)}</span></div>
+          </div>
+
+          <div className="rows">
+            <div className="row"><span className="k">Brüt gelir / ay</span><span className="v">{usd(r.grossMonthly)}</span></div>
+            <div className="row"><span className="k">IAP brüt</span><span className="v">{usd(r.iapGrossDaily * 30)}</span></div>
+            {bpOn && <div className="row"><span className="k">Battle pass brüt</span><span className="v">{usd(r.bpGrossDaily * 30)}</span></div>}
+            <div className="row"><span className="k">Mağaza kesintileri</span><span className="v">−{usd((r.purchaseGross - r.purchaseNet) * 30)}</span></div>
+            <div className="row"><span className="k">Reklam geliri</span><span className="v">{usd(r.adDaily * 30)}</span></div>
+            <div className="row"><span className="k">Net gelir / ay</span><span className="v">{usd(r.netMonthly)}</span></div>
+            <div className="row"><span className="k">Sunucu</span><span className="v">−{usd(r.serverMonthly)}</span></div>
+            <div className="row"><span className="k">Sabit gider</span><span className="v">−{usd(fixedMonthly)}</span></div>
+            <div className="row"><span className="k">UA harcaması</span><span className="v">−{usd(r.uaMonthly)}</span></div>
+            <div className="row total"><span className="k">Kâr</span><span className="v">{usd(r.profitMonthly)}</span></div>
+          </div>
+
+          <div className="kpis">
+            <div className="kpi"><div className="k">ARPDAU (brüt)</div><div className="v">{usd(r.arpdauGross, 3)}</div></div>
+            <div className="kpi"><div className="k">ARPDAU (net)</div><div className="v">{usd(r.arpdauNet, 3)}</div></div>
+            <div className="kpi"><div className="k">ARPPU (günlük)</div><div className="v">{usd(r.arppu, 2)}</div></div>
+            <div className="kpi"><div className="k">LTV (net)</div><div className="v">{usd(r.ltv, 2)}</div></div>
+            <div className="kpi"><div className="k">ROAS (LTV/CPI)</div>
+              <div className={"v " + (r.roas >= 1 ? "good" : "bad")}>{fmt(r.roas, 2)}×</div></div>
+            <div className="kpi"><div className="k">UA ile aylık indirme</div><div className="v">{fmt(r.newInstallsMonthly)}</div></div>
+            <div className="kpi"><div className="k">Başabaş DAU</div>
+              <div className={"v " + (r.breakEvenDau !== null && r.dau >= r.breakEvenDau ? "good" : "bad")}>
+                {r.breakEvenDau === null ? "—" : fmt(r.breakEvenDau)}
+              </div></div>
+            <div className="kpi"><div className="k">Gelir günlük (net)</div><div className="v">{usd(r.netDaily)}</div></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
